@@ -1,1 +1,114 @@
-Hello world
+<!doctype html>
+<html>
+<head>
+  <title>Hi Yulia</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html {
+  font: Menlo, sans-serif;
+}
+body {
+  max-width: 90vw;
+  margin-left: auto;
+  margin-right: auto;
+}
+.box {
+  padding: 1em;
+  margin-top:2em;
+  border:1px solid #999;
+  border-radius:2px;
+  box-shadow:2px 2px 2px -1px #ccc;
+}
+.box h2 {
+  margin-top: 0;
+}
+</style>
+</head>
+<body>
+  <h1>Sensor data example</h1>
+  <p>
+    <button id="enable-sensors">Click here to enable sensors/request permission</button>
+    <button id="disable-sensors">Click here to disable sensors</button>
+  </p>
+  <p>
+    Websocket address: <input id="websocket-address" type="text" placeholder="ws://SERVER_IP:PORT">
+    <button id="connect-websocket">Connect</button>
+    <button id="disconnect-websocket">Disconnect</button>
+  </p>
+  <div class="box">
+    <h2>Sensor values</h2>
+    <div class="output"></div>
+  </div>
+  <div class="box">
+    <h2>Custom message (if sensors aren't working)</h2>
+    <p>
+      <label>beta <input id="beta" type="number" /></label>
+      <br>
+      <label>gamma <input id="gamma" type="number" /></label>
+    </p>
+    <button id="manual">Send manual event</button>
+  </div>
+<script>
+  // start a reciever on your laptop with something like
+  // websocat (https://github.com/vi/websocat)
+  //
+  // $ websocat -s 0.0.0.0:61116
+
+  const precision = 1;
+
+  var socket = null;
+  var output = document.querySelector('.output');
+
+  function handleOrientation(event) {
+    var beta = event.beta.toFixed(precision);
+    var gamma = event.gamma.toFixed(precision);
+
+    output.innerHTML  = "beta : " + beta + "\n";
+    output.innerHTML += "gamma: " + gamma + "\n";
+
+    var msg = {
+      beta: beta,   // degrees [-180, 180]
+      gamma: gamma, // degrees [-90, 90]
+      date: Date.now(),
+    }
+    if (socket) {
+      socket.send(JSON.stringify(msg));
+    }
+  }
+
+  document.getElementById('enable-sensors').onclick = () => {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        })
+        .catch(console.error);
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+  };
+
+  document.getElementById('disable-sensors').onclick = () => {
+    window.removeEventListener('deviceorientation', handleOrientation);
+  };
+
+  document.getElementById('manual').onclick = () => {
+    handleOrientation({
+      beta: parseFloat(document.getElementById('beta').value),
+      gamma: parseFloat(document.getElementById('gamma').value),
+    });
+  };
+  
+  document.getElementById('connect-websocket').onclick = () => {
+    var websocketAddress = document.getElementById('websocket-address').value;
+    socket = new WebSocket(websocketAddress, 'sensorData');
+  };
+
+  document.getElementById('disconnect-websocket').onclick = () => {
+    socket = null;
+  };
+</script>
+</body>
+</html>
