@@ -31,7 +31,8 @@ body {
     <button id="disable-sensors">Click here to disable sensors</button>
   </p>
   <p>
-    Websocket address: <input id="websocket-address" type="text" placeholder="ws://SERVER_IP:PORT">
+    Websocket address: <input id="websocket-address" type="text" placeholder="ws://SERVER_IP:PORT">,
+    user ID <input id="websocket-user" type="text" />
     <button id="connect-websocket">Connect</button>
     <button id="disconnect-websocket">Disconnect</button>
   </p>
@@ -54,6 +55,9 @@ body {
   //
   // $ websocat -s 0.0.0.0:61116
 
+  var userId = document.getElementById('websocket-user');
+  userId.value = Math.random().toString(36).substr(2);
+
   const precision = 1;
 
   var socket = null;
@@ -70,6 +74,7 @@ body {
       beta: beta,   // degrees [-180, 180]
       gamma: gamma, // degrees [-90, 90]
       date: Date.now(),
+      user: userId.value || "unset",
     }
     if (socket) {
       socket.send(JSON.stringify(msg));
